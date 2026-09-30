@@ -454,7 +454,7 @@ final class IslandWindowController: NSWindowController {
             finishDrag()
         }
 
-        // Global Karmi shortcut is intercepted at the CGEvent level so ⌘K
+        // Global Karmi shortcut is intercepted at the CGEvent level so ⌥K
         // belongs exclusively to Karmi while the app is running.
         NotificationCenter.default.addObserver(forName: .karmiGlobalHotkeyDown, object: nil, queue: .main) { [weak self] _ in
             guard let self, self.state.hotkeyEnabled else { return }
