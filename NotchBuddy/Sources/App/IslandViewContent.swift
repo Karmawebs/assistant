@@ -56,9 +56,9 @@ struct OverviewView: View {
             // Main modules
             CardBackground(wash: nil) {
                 VStack(spacing: 6) {
-                    KarmaModuleButton(title: "APP", systemImage: "eurosign")
-                    KarmaModuleButton(title: "WORK", systemImage: "checkmark")
-                    KarmaModuleButton(title: "CARE", systemImage: "heart.fill")
+                    KarmaModuleButton(title: "APP", systemImage: "eurosign", url: KarmaServiceClient.shared.appURL)
+                    KarmaModuleButton(title: "WORK", systemImage: "checkmark", url: KarmaServiceClient.shared.workURL)
+                    KarmaModuleButton(title: "CARE", systemImage: "heart.fill", url: KarmaServiceClient.shared.careURL)
                 }
                 .padding(8)
             }
@@ -69,11 +69,13 @@ struct OverviewView: View {
 private struct KarmaModuleButton: View {
     let title: String
     let systemImage: String
+    let url: URL
     @State private var hovered = false
 
     var body: some View {
         Button {
-            // Connection to Karma App / Work / Care will be added in the next phase.
+            NSWorkspace.shared.open(url)
+            NotificationCenter.default.post(name: .islandCollapse, object: nil)
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: systemImage)
