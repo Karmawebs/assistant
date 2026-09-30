@@ -28,6 +28,8 @@
 	<string>Karma Assistant puede abrir herramientas y aplicaciones relacionadas con tus tareas.</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Karmi usa el micrófono únicamente cuando activas el dictado para transcribir tu voz a texto.</string>
 	<key>NSSupportsAutomaticGraphicsSwitching</key>
 	<true/>
 </dict>
