@@ -59,13 +59,13 @@ final class GlobalKarmiHotkeyInterceptor {
 
                 if type == .keyDown {
                     let flags = event.flags
-                    let hasCommand = flags.contains(.maskCommand)
+                    let hasOption = flags.contains(.maskAlternate)
                     let hasOtherModifier =
-                        flags.contains(.maskAlternate) ||
+                        flags.contains(.maskCommand) ||
                         flags.contains(.maskControl) ||
                         flags.contains(.maskShift)
 
-                    guard hasCommand && !hasOtherModifier else {
+                    guard hasOption && !hasOtherModifier else {
                         return Unmanaged.passUnretained(event)
                     }
 
