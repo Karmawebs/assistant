@@ -71,6 +71,10 @@ final class KeychainStore: @unchecked Sendable {
         "notion-api-key",
         "cloudflare-access-client-id",
         "cloudflare-access-client-secret",
+        "karmi-supabase-email",
+        "karmi-supabase-password",
+        "karmi-supabase-access-token",
+        "karmi-supabase-refresh-token",
     ]
 
     private init() {
