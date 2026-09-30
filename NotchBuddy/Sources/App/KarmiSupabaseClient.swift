@@ -176,6 +176,42 @@ final class KarmiSupabaseClient: @unchecked Sendable {
         }
     }
 
+    func createIncome(
+        description: String,
+        baseAmount: Double,
+        date: String? = nil,
+        scope: String = "A",
+        vatRate: Double = 21,
+        withholdingRate: Double = 15,
+        paymentStatus: String = "unpaid",
+        amountReceived: Double = 0,
+        clientName: String? = nil,
+        businessLineName: String? = nil,
+        notes: String? = nil
+    ) async -> KarmiActionResult {
+        do {
+            var payload: [String: Any] = [
+                "p_description": description,
+                "p_base_amount": baseAmount,
+                "p_accounting_scope": scope,
+                "p_vat_rate": vatRate,
+                "p_withholding_rate": withholdingRate,
+                "p_payment_status": paymentStatus,
+                "p_amount_received": amountReceived
+            ]
+            if let date { payload["p_job_date"] = date }
+            if let clientName { payload["p_client_name"] = clientName }
+            if let businessLineName { payload["p_business_line_name"] = businessLineName }
+            if let notes { payload["p_notes"] = notes }
+
+            let result = try await rpc("karmi_create_income", payload: payload)
+            let code = result["job_code"].map { String(describing: $0) } ?? ""
+            return KarmiActionResult(ok: true, message: "Ingreso creado\(code.isEmpty ? "." : " \(code).")", payload: result)
+        } catch {
+            return KarmiActionResult(ok: false, message: error.localizedDescription, payload: nil)
+        }
+    }
+
     func createTask(
         title: String,
         projectName: String? = nil,
