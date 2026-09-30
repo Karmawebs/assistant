@@ -105,14 +105,14 @@ final class AppState: ObservableObject {
         didSet { UserDefaults.standard.set(greetThresholdSeconds, forKey: "greetThreshold") }
     }
 
-    // Hotkey to show island (e.g. ⌘⇧N)
-    @Published var hotkeyEnabled: Bool = false {
+    // Karmi global shortcut: ⌘K
+    @Published var hotkeyEnabled: Bool = true {
         didSet { UserDefaults.standard.set(hotkeyEnabled, forKey: "hotkeyEnabled") }
     }
-    var hotkeyFlags: UInt = NSEvent.ModifierFlags([.command, .shift]).rawValue {
+    var hotkeyFlags: UInt = NSEvent.ModifierFlags([.command]).rawValue {
         didSet { UserDefaults.standard.set(Int(hotkeyFlags), forKey: "hotkeyFlags") }
     }
-    var hotkeyCode: UInt16 = 45 {  // 'n'
+    var hotkeyCode: UInt16 = 40 {  // 'k'
         didSet { UserDefaults.standard.set(Int(hotkeyCode), forKey: "hotkeyCode") }
     }
 
@@ -197,9 +197,21 @@ final class AppState: ObservableObject {
         }
         if let v = ud.object(forKey: "absenceInterval")   as? Double { absenceInterval   = v }
         if let v = ud.object(forKey: "greetThreshold")    as? Double { greetThresholdSeconds = v }
-        if let v = ud.object(forKey: "hotkeyEnabled") as? Bool  { hotkeyEnabled = v }
-        if let v = ud.object(forKey: "hotkeyFlags")   as? Int   { hotkeyFlags = UInt(v) }
-        if let v = ud.object(forKey: "hotkeyCode")    as? Int   { hotkeyCode = UInt16(v) }
+
+        // One-time migration: Karmi's standard shortcut is ⌘K.
+        if !ud.bool(forKey: "karmiCmdKShortcutV1") {
+            hotkeyEnabled = true
+            hotkeyFlags = NSEvent.ModifierFlags([.command]).rawValue
+            hotkeyCode = 40
+            ud.set(true, forKey: "hotkeyEnabled")
+            ud.set(Int(hotkeyFlags), forKey: "hotkeyFlags")
+            ud.set(Int(hotkeyCode), forKey: "hotkeyCode")
+            ud.set(true, forKey: "karmiCmdKShortcutV1")
+        } else {
+            if let v = ud.object(forKey: "hotkeyEnabled") as? Bool  { hotkeyEnabled = v }
+            if let v = ud.object(forKey: "hotkeyFlags")   as? Int   { hotkeyFlags = UInt(v) }
+            if let v = ud.object(forKey: "hotkeyCode")    as? Int   { hotkeyCode = UInt16(v) }
+        }
         if let d = ud.data(forKey: "vercelProjectFilter"),
            let a = try? JSONDecoder().decode([String].self, from: d) { vercelProjectFilter = Set(a) }
         if let d = ud.data(forKey: "n8nWorkflowFilter"),
