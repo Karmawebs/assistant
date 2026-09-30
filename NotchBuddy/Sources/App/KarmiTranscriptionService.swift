@@ -141,11 +141,11 @@ final class KarmiTranscriptionService: ObservableObject {
         append("Content-Disposition: form-data; name=\"model\"\r\n\r\n")
         append("gpt-4o-mini-transcribe\r\n")
 
-        append("--(boundary)\r\n")
+        append("--" + boundary + "\r\n")
         append("Content-Disposition: form-data; name=\"language\"\r\n\r\n")
         append("es\r\n")
 
-        append("--(boundary)\r\n")
+        append("--" + boundary + "\r\n")
         append("Content-Disposition: form-data; name=\"file\"; filename=\"" + filename + "\"\r\n")
         append("Content-Type: audio/mp4\r\n\r\n")
         body.append(audio)
