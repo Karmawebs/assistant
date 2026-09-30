@@ -23,6 +23,10 @@ struct SettingsView: View {
     @State private var stripeKey: String    = KeychainStore.shared.get("stripe-api-key")  ?? ""
     @State private var calcomKey: String    = KeychainStore.shared.get("calcom-api-key")  ?? ""
     @State private var notionKey: String    = KeychainStore.shared.get("notion-api-key")  ?? ""
+    @State private var cfAccessClientID: String = KeychainStore.shared.get("cloudflare-access-client-id") ?? ""
+    @State private var cfAccessClientSecret: String = KeychainStore.shared.get("cloudflare-access-client-secret") ?? ""
+    @State private var karmaConnectionStatus: String = ""
+    @State private var testingKarmaConnection: Bool = false
 
     // Hotkey
     @State private var hotkeyFlags: UInt    = AppState.shared.hotkeyFlags
@@ -215,6 +219,43 @@ struct SettingsView: View {
 
                         Button("Save integrations") { saveIntegrations() }
                             .buttonStyle(.borderedProminent)
+                    }
+                    .padding(6)
+                }
+
+                // MARK: Karma Ecosystem
+                GroupBox("Karma Ecosystem") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Acceso automático a APP, WORK y CARE mediante Cloudflare Access.")
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+
+                        TextField("CF-Access-Client-Id", text: $cfAccessClientID)
+                            .textFieldStyle(.roundedBorder)
+
+                        SecureField("CF-Access-Client-Secret", text: $cfAccessClientSecret)
+                            .textFieldStyle(.roundedBorder)
+
+                        HStack(spacing: 8) {
+                            Button("Guardar") {
+                                saveKey("cloudflare-access-client-id", value: cfAccessClientID)
+                                saveKey("cloudflare-access-client-secret", value: cfAccessClientSecret)
+                                karmaConnectionStatus = "✓ Credenciales guardadas en el llavero."
+                            }
+                            .buttonStyle(.borderedProminent)
+
+                            Button(testingKarmaConnection ? "Probando…" : "Probar conexión") {
+                                testKarmaConnection()
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(testingKarmaConnection)
+                        }
+
+                        if !karmaConnectionStatus.isEmpty {
+                            Text(karmaConnectionStatus)
+                                .font(.system(size: 11))
+                                .foregroundColor(karmaConnectionStatus.hasPrefix("✓") ? .green : .secondary)
+                        }
                     }
                     .padding(6)
                 }
@@ -493,6 +534,34 @@ struct SettingsView: View {
             KeychainStore.shared.remove(key)
         } else {
             KeychainStore.shared.set(key, value: value)
+        }
+    }
+
+    private func testKarmaConnection() {
+        saveKey("cloudflare-access-client-id", value: cfAccessClientID)
+        saveKey("cloudflare-access-client-secret", value: cfAccessClientSecret)
+
+        testingKarmaConnection = true
+        karmaConnectionStatus = "Probando APP, WORK y CARE…"
+
+        Task {
+            let statuses = await KarmaServiceClient.shared.testAll()
+            await MainActor.run {
+                testingKarmaConnection = false
+                let ok = statuses.filter { $0.reachable }.map(\.name)
+                let failed = statuses.filter { !$0.reachable }.map { status in
+                    if let code = status.statusCode { return "\(status.name) (HTTP \(code))" }
+                    return status.name
+                }
+
+                if failed.isEmpty {
+                    karmaConnectionStatus = "✓ APP · WORK · CARE conectados."
+                } else if ok.isEmpty {
+                    karmaConnectionStatus = "❌ Sin conexión: \(failed.joined(separator: ", "))."
+                } else {
+                    karmaConnectionStatus = "⚠️ OK: \(ok.joined(separator: ", ")) · Fallan: \(failed.joined(separator: ", "))."
+                }
+            }
         }
     }
 
