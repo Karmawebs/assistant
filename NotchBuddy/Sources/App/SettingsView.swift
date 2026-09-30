@@ -27,6 +27,10 @@ struct SettingsView: View {
     @State private var cfAccessClientSecret: String = KeychainStore.shared.get("cloudflare-access-client-secret") ?? ""
     @State private var karmaConnectionStatus: String = ""
     @State private var testingKarmaConnection: Bool = false
+    @State private var karmiEmail: String = KeychainStore.shared.get("karmi-supabase-email") ?? ""
+    @State private var karmiPassword: String = KeychainStore.shared.get("karmi-supabase-password") ?? ""
+    @State private var karmiSupabaseStatus: String = ""
+    @State private var testingSupabaseConnection: Bool = false
 
     // Hotkey
     @State private var hotkeyFlags: UInt    = AppState.shared.hotkeyFlags
@@ -237,14 +241,14 @@ struct SettingsView: View {
                             .textFieldStyle(.roundedBorder)
 
                         HStack(spacing: 8) {
-                            Button("Guardar") {
+                            Button("Guardar Access") {
                                 saveKey("cloudflare-access-client-id", value: cfAccessClientID)
                                 saveKey("cloudflare-access-client-secret", value: cfAccessClientSecret)
-                                karmaConnectionStatus = "✓ Credenciales guardadas en el llavero."
+                                karmaConnectionStatus = "✓ Credenciales de Access guardadas."
                             }
                             .buttonStyle(.borderedProminent)
 
-                            Button(testingKarmaConnection ? "Probando…" : "Probar conexión") {
+                            Button(testingKarmaConnection ? "Probando…" : "Probar Access") {
                                 testKarmaConnection()
                             }
                             .buttonStyle(.bordered)
@@ -255,6 +259,40 @@ struct SettingsView: View {
                             Text(karmaConnectionStatus)
                                 .font(.system(size: 11))
                                 .foregroundColor(karmaConnectionStatus.hasPrefix("✓") ? .green : .secondary)
+                        }
+
+                        Divider()
+
+                        Text("Cuenta central de Karma")
+                            .font(.system(size: 12, weight: .semibold))
+
+                        TextField("Email de Karma", text: $karmiEmail)
+                            .textFieldStyle(.roundedBorder)
+
+                        SecureField("Contraseña de Karma", text: $karmiPassword)
+                            .textFieldStyle(.roundedBorder)
+
+                        HStack(spacing: 8) {
+                            Button("Guardar cuenta") {
+                                saveKey("karmi-supabase-email", value: karmiEmail)
+                                saveKey("karmi-supabase-password", value: karmiPassword)
+                                KeychainStore.shared.remove("karmi-supabase-access-token")
+                                KeychainStore.shared.remove("karmi-supabase-refresh-token")
+                                karmiSupabaseStatus = "✓ Cuenta guardada en el llavero."
+                            }
+                            .buttonStyle(.borderedProminent)
+
+                            Button(testingSupabaseConnection ? "Conectando…" : "Probar Supabase") {
+                                testKarmiSupabase()
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(testingSupabaseConnection)
+                        }
+
+                        if !karmiSupabaseStatus.isEmpty {
+                            Text(karmiSupabaseStatus)
+                                .font(.system(size: 11))
+                                .foregroundColor(karmiSupabaseStatus.hasPrefix("✓") ? .green : .secondary)
                         }
                     }
                     .padding(6)
@@ -534,6 +572,24 @@ struct SettingsView: View {
             KeychainStore.shared.remove(key)
         } else {
             KeychainStore.shared.set(key, value: value)
+        }
+    }
+
+    private func testKarmiSupabase() {
+        saveKey("karmi-supabase-email", value: karmiEmail)
+        saveKey("karmi-supabase-password", value: karmiPassword)
+        KeychainStore.shared.remove("karmi-supabase-access-token")
+        KeychainStore.shared.remove("karmi-supabase-refresh-token")
+
+        testingSupabaseConnection = true
+        karmiSupabaseStatus = "Conectando con Supabase…"
+
+        Task {
+            let result = await KarmiSupabaseClient.shared.testConnection()
+            await MainActor.run {
+                testingSupabaseConnection = false
+                karmiSupabaseStatus = result.ok ? "✓ Supabase conectado." : "❌ \(result.message)"
+            }
         }
     }
 
