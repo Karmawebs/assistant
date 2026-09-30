@@ -851,11 +851,10 @@ struct PromptView: View {
 
         do {
             if let transcript = try await transcription.toggleRecording(), !transcript.isEmpty {
-                if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    text = transcript
-                } else {
-                    text += " " + transcript
-                }
+                let existing = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                text = existing.isEmpty ? transcript : existing + " " + transcript
+                sendMessage()
+                return
             }
             focused = true
         } catch {
