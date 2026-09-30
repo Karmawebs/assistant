@@ -1,6 +1,6 @@
 import Foundation
 
-struct KarmiActionResult: Sendable {
+struct KarmiActionResult {
     let ok: Bool
     let message: String
     let payload: [String: Any]?
