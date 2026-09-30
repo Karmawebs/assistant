@@ -700,6 +700,8 @@ struct MailView: View {
 struct PromptView: View {
     @ObservedObject var state: AppState
     @State private var text: String = ""
+    @State private var voiceError: String = ""
+    @ObservedObject private var transcription = KarmiTranscriptionService.shared
     @FocusState private var focused: Bool
 
     var body: some View {
@@ -751,13 +753,25 @@ struct PromptView: View {
                         .focused($focused)
                         .onSubmit { sendMessage() }
 
+                    Button {
+                        Task { await toggleVoice() }
+                    } label: {
+                        Image(systemName: transcription.isRecording ? "stop.fill" : (transcription.isTranscribing ? "waveform" : "mic.fill"))
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(transcription.isRecording ? Color(hex: "#F26F78") : Color(hex: "#B0B5BE"))
+                            .frame(width: 24, height: 24)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(transcription.isTranscribing)
+                    .help(transcription.isRecording ? "Detener dictado" : "Dictar a Karmi")
+
                     Button(action: sendMessage) {
                         Image(systemName: "arrow.up")
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundColor(Color(hex: "#0B0C0E"))
                     }
                     .buttonStyle(SendButtonStyle())
-                    .disabled(text.isEmpty)
+                    .disabled(text.isEmpty || transcription.isRecording || transcription.isTranscribing)
                 }
                 .padding(.horizontal, 10).padding(.vertical, 6)
                 .background(Color.white.opacity(0.07))
@@ -770,7 +784,38 @@ struct PromptView: View {
             .padding(.bottom, 14)
         }
         .padding(.bottom, 10)
+        .overlay(alignment: .bottomLeading) {
+            if !voiceError.isEmpty {
+                Text(voiceError)
+                    .font(.system(size: 10))
+                    .foregroundColor(Color(hex: "#F48A90"))
+                    .padding(.leading, 86)
+                    .padding(.bottom, 2)
+            }
+        }
         .onAppear { focused = true }
+        .onDisappear {
+            if transcription.isRecording { transcription.cancel() }
+        }
+    }
+
+    private func toggleVoice() async {
+        voiceError = ""
+        focused = false
+
+        do {
+            if let transcript = try await transcription.toggleRecording(), !transcript.isEmpty {
+                if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    text = transcript
+                } else {
+                    text += " " + transcript
+                }
+            }
+            focused = true
+        } catch {
+            voiceError = error.localizedDescription
+            focused = true
+        }
     }
 
     private func sendMessage() {
