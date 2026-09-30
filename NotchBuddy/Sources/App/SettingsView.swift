@@ -31,6 +31,9 @@ struct SettingsView: View {
     @State private var karmiPassword: String = KeychainStore.shared.get("karmi-supabase-password") ?? ""
     @State private var karmiSupabaseStatus: String = ""
     @State private var testingSupabaseConnection: Bool = false
+    @State private var openAIKey: String = KeychainStore.shared.get("openai-api-key") ?? ""
+    @State private var openAIStatus: String = ""
+    @State private var testingOpenAI: Bool = false
 
     // Hotkey
     @State private var hotkeyFlags: UInt    = AppState.shared.hotkeyFlags
@@ -223,6 +226,38 @@ struct SettingsView: View {
 
                         Button("Save integrations") { saveIntegrations() }
                             .buttonStyle(.borderedProminent)
+                    }
+                    .padding(6)
+                }
+
+                // MARK: Karma AI
+                GroupBox("Karma AI") {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("GPT-5.6 Luna · OpenAI Responses API")
+                            .font(.system(size: 12, weight: .semibold))
+
+                        SecureField("OpenAI API key", text: $openAIKey)
+                            .textFieldStyle(.roundedBorder)
+
+                        HStack(spacing: 8) {
+                            Button("Guardar API") {
+                                saveKey("openai-api-key", value: openAIKey)
+                                openAIStatus = "✓ API key guardada en el llavero."
+                            }
+                            .buttonStyle(.borderedProminent)
+
+                            Button(testingOpenAI ? "Probando…" : "Probar Luna") {
+                                testOpenAI()
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(testingOpenAI)
+                        }
+
+                        if !openAIStatus.isEmpty {
+                            Text(openAIStatus)
+                                .font(.system(size: 11))
+                                .foregroundColor(openAIStatus.hasPrefix("✓") ? .green : .secondary)
+                        }
                     }
                     .padding(6)
                 }
@@ -572,6 +607,25 @@ struct SettingsView: View {
             KeychainStore.shared.remove(key)
         } else {
             KeychainStore.shared.set(key, value: value)
+        }
+    }
+
+    private func testOpenAI() {
+        saveKey("openai-api-key", value: openAIKey)
+        testingOpenAI = true
+        openAIStatus = "Conectando con GPT-5.6 Luna…"
+
+        Task {
+            let result = await KarmiAIService.shared.testConnection()
+            await MainActor.run {
+                testingOpenAI = false
+                switch result {
+                case .success:
+                    openAIStatus = "✓ GPT-5.6 Luna conectado."
+                case .failure(let error):
+                    openAIStatus = "❌ \(error.localizedDescription)"
+                }
+            }
         }
     }
 
