@@ -454,61 +454,54 @@ final class IslandWindowController: NSWindowController {
             finishDrag()
         }
 
-        // Global Karmi shortcut: ⌥K.
+        // Native global Karmi hotkey: ⌥K.
         // Quick press toggles Karmi; holding it for 0.45s opens dictation.
-        NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            Task { @MainActor in
-                guard let self, self.state.hotkeyEnabled else { return }
-                let pressed = event.modifierFlags.intersection([.command, .control, .option, .shift]).rawValue
-                guard pressed == self.state.hotkeyFlags, event.keyCode == self.state.hotkeyCode else { return }
-                guard !event.isARepeat, !self.hotkeyKeyIsDown else { return }
+        NotificationCenter.default.addObserver(forName: .karmiHotKeyPressed, object: nil, queue: .main) { [weak self] _ in
+            guard let self, self.state.hotkeyEnabled else { return }
+            guard !self.hotkeyKeyIsDown else { return }
 
-                self.hotkeyKeyIsDown = true
-                self.hotkeyLongPressTriggered = false
-                self.hotkeyHoldWorkItem?.cancel()
+            self.hotkeyKeyIsDown = true
+            self.hotkeyLongPressTriggered = false
+            self.hotkeyHoldWorkItem?.cancel()
 
-                let hold = DispatchWorkItem { [weak self] in
-                    Task { @MainActor in
-                        guard let self, self.hotkeyKeyIsDown else { return }
-                        self.hotkeyLongPressTriggered = true
-                        self.expand(to: .prompt)
+            let hold = DispatchWorkItem { [weak self] in
+                Task { @MainActor in
+                    guard let self, self.hotkeyKeyIsDown else { return }
+                    self.hotkeyLongPressTriggered = true
+                    self.expand(to: .prompt)
 
-                        do {
-                            if !KarmiTranscriptionService.shared.isRecording {
-                                try await KarmiTranscriptionService.shared.startRecording()
-                            }
-                        } catch {
-                            self.state.chatHistory.append(
-                                ChatMessage(role: .assistant, content: "No he podido activar el micrófono: \(error.localizedDescription)")
-                            )
+                    do {
+                        if !KarmiTranscriptionService.shared.isRecording {
+                            try await KarmiTranscriptionService.shared.startRecording()
                         }
+                    } catch {
+                        self.state.chatHistory.append(
+                            ChatMessage(role: .assistant, content: "No he podido activar el micrófono: \(error.localizedDescription)")
+                        )
                     }
                 }
-
-                self.hotkeyHoldWorkItem = hold
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.45, execute: hold)
             }
+
+            self.hotkeyHoldWorkItem = hold
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45, execute: hold)
         }
 
-        hotkeyKeyUpMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyUp) { [weak self] event in
-            Task { @MainActor in
-                guard let self, self.state.hotkeyEnabled else { return }
-                guard event.keyCode == self.state.hotkeyCode, self.hotkeyKeyIsDown else { return }
+        NotificationCenter.default.addObserver(forName: .karmiHotKeyReleased, object: nil, queue: .main) { [weak self] _ in
+            guard let self, self.state.hotkeyEnabled, self.hotkeyKeyIsDown else { return }
 
-                self.hotkeyKeyIsDown = false
-                self.hotkeyHoldWorkItem?.cancel()
-                self.hotkeyHoldWorkItem = nil
+            self.hotkeyKeyIsDown = false
+            self.hotkeyHoldWorkItem?.cancel()
+            self.hotkeyHoldWorkItem = nil
 
-                if self.hotkeyLongPressTriggered {
-                    self.hotkeyLongPressTriggered = false
-                    return
-                }
+            if self.hotkeyLongPressTriggered {
+                self.hotkeyLongPressTriggered = false
+                return
+            }
 
-                if self.state.mode == .expanded {
-                    self.collapse()
-                } else {
-                    self.expand(to: .overview)
-                }
+            if self.state.mode == .expanded {
+                self.collapse()
+            } else {
+                self.expand(to: .overview)
             }
         }
 
