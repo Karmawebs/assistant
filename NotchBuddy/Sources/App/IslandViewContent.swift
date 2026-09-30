@@ -56,9 +56,24 @@ struct OverviewView: View {
             // Main modules
             CardBackground(wash: nil) {
                 VStack(spacing: 6) {
-                    KarmaModuleButton(title: "APP", systemImage: "eurosign", url: KarmaServiceClient.shared.appURL)
-                    KarmaModuleButton(title: "WORK", systemImage: "checkmark", url: KarmaServiceClient.shared.workURL)
-                    KarmaModuleButton(title: "CARE", systemImage: "heart.fill", url: KarmaServiceClient.shared.careURL)
+                    KarmaModuleButton(
+                        title: "APP",
+                        systemImage: "eurosign",
+                        applicationNames: ["Karma App", "Karma"],
+                        fallbackURL: KarmaServiceClient.shared.appURL
+                    )
+                    KarmaModuleButton(
+                        title: "WORK",
+                        systemImage: "checkmark",
+                        applicationNames: ["Karma Work", "Work"],
+                        fallbackURL: KarmaServiceClient.shared.workURL
+                    )
+                    KarmaModuleButton(
+                        title: "CARE",
+                        systemImage: "heart.fill",
+                        applicationNames: ["Karma Care", "Care"],
+                        fallbackURL: KarmaServiceClient.shared.careURL
+                    )
                 }
                 .padding(8)
             }
@@ -69,12 +84,15 @@ struct OverviewView: View {
 private struct KarmaModuleButton: View {
     let title: String
     let systemImage: String
-    let url: URL
+    let applicationNames: [String]
+    let fallbackURL: URL
     @State private var hovered = false
 
     var body: some View {
         Button {
-            NSWorkspace.shared.open(url)
+            if !openInstalledApplication() {
+                NSWorkspace.shared.open(fallbackURL)
+            }
             NotificationCenter.default.post(name: .islandCollapse, object: nil)
         } label: {
             HStack(spacing: 8) {
@@ -104,6 +122,26 @@ private struct KarmaModuleButton: View {
         }
         .buttonStyle(.plain)
         .onHover { hovered = $0 }
+    }
+
+    private func openInstalledApplication() -> Bool {
+        let fm = FileManager.default
+        let roots = [
+            URL(fileURLWithPath: "/Applications", isDirectory: true),
+            fm.homeDirectoryForCurrentUser.appendingPathComponent("Applications", isDirectory: true),
+        ]
+
+        for name in applicationNames {
+            for root in roots {
+                let appURL = root.appendingPathComponent("\(name).app", isDirectory: true)
+                if fm.fileExists(atPath: appURL.path) {
+                    let config = NSWorkspace.OpenConfiguration()
+                    NSWorkspace.shared.openApplication(at: appURL, configuration: config)
+                    return true
+                }
+            }
+        }
+        return false
     }
 }
 
