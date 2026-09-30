@@ -14,7 +14,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
         setupMenuBarItem()
         setupIsland()
-        GlobalKarmiHotkeyInterceptor.shared.start()
     }
 
     // MARK: - Menu bar
