@@ -78,9 +78,9 @@ enum MochiConst {
     static let eyeH: CGFloat  = 0.27
     static let eyeSp: CGFloat = 0.37
     static let eyeP: CGFloat  = -0.12
-    static let baseTop    = CGColor(red: 0.929, green: 0.929, blue: 0.937, alpha: 1)  // #EDEDEF
-    static let baseBottom = CGColor(red: 0.769, green: 0.773, blue: 0.792, alpha: 1)  // #C4C5CA
-    static let ink        = CGColor(red: 0.102, green: 0.082, blue: 0.071, alpha: 1)  // #1A1412
+    static let baseTop    = CGColor(red: 0.035, green: 0.035, blue: 0.040, alpha: 1)  // #09090A — Karmi black
+    static let baseBottom = CGColor(red: 0.000, green: 0.000, blue: 0.000, alpha: 1)  // #000000 — Karmi black
+    static let ink        = CGColor(red: 1.000, green: 1.000, blue: 1.000, alpha: 1)  // #FFFFFF — Karmi white eyes
     static let miniInk    = CGColor(red: 0.063, green: 0.075, blue: 0.102, alpha: 1)  // #10131A
 }
 
