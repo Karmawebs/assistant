@@ -6,7 +6,7 @@ extension Notification.Name {
     static let karmiHotKeyReleased = Notification.Name("karmiHotKeyReleased")
 }
 
-final class KarmiHotKeyManager {
+final class KarmiHotKeyManager: @unchecked Sendable {
     static let shared = KarmiHotKeyManager()
 
     private var hotKeyRef: EventHotKeyRef?
@@ -82,7 +82,7 @@ final class KarmiHotKeyManager {
             &handlerRef
         )
 
-        var hotKeyID = EventHotKeyID(
+        let hotKeyID = EventHotKeyID(
             signature: OSType(0x4B41524D), // 'KARM'
             id: 1
         )
