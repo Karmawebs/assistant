@@ -105,11 +105,11 @@ final class AppState: ObservableObject {
         didSet { UserDefaults.standard.set(greetThresholdSeconds, forKey: "greetThreshold") }
     }
 
-    // Karmi global shortcut: ⌘K
+    // Karmi global shortcut: ⌥K
     @Published var hotkeyEnabled: Bool = true {
         didSet { UserDefaults.standard.set(hotkeyEnabled, forKey: "hotkeyEnabled") }
     }
-    var hotkeyFlags: UInt = NSEvent.ModifierFlags([.command]).rawValue {
+    var hotkeyFlags: UInt = NSEvent.ModifierFlags([.option]).rawValue {
         didSet { UserDefaults.standard.set(Int(hotkeyFlags), forKey: "hotkeyFlags") }
     }
     var hotkeyCode: UInt16 = 40 {  // 'k'
@@ -199,14 +199,14 @@ final class AppState: ObservableObject {
         if let v = ud.object(forKey: "greetThreshold")    as? Double { greetThresholdSeconds = v }
 
         // One-time migration: Karmi's standard shortcut is ⌘K.
-        if !ud.bool(forKey: "karmiCmdKShortcutV1") {
+        if !ud.bool(forKey: "karmiOptionKShortcutV1") {
             hotkeyEnabled = true
-            hotkeyFlags = NSEvent.ModifierFlags([.command]).rawValue
+            hotkeyFlags = NSEvent.ModifierFlags([.option]).rawValue
             hotkeyCode = 40
             ud.set(true, forKey: "hotkeyEnabled")
             ud.set(Int(hotkeyFlags), forKey: "hotkeyFlags")
             ud.set(Int(hotkeyCode), forKey: "hotkeyCode")
-            ud.set(true, forKey: "karmiCmdKShortcutV1")
+            ud.set(true, forKey: "karmiOptionKShortcutV1")
         } else {
             if let v = ud.object(forKey: "hotkeyEnabled") as? Bool  { hotkeyEnabled = v }
             if let v = ud.object(forKey: "hotkeyFlags")   as? Int   { hotkeyFlags = UInt(v) }
