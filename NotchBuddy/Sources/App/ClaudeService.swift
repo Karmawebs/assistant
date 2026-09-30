@@ -69,6 +69,8 @@ final class KeychainStore: @unchecked Sendable {
         "stripe-api-key",
         "calcom-api-key",
         "notion-api-key",
+        "cloudflare-access-client-id",
+        "cloudflare-access-client-secret",
     ]
 
     private init() {
