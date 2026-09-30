@@ -75,6 +75,7 @@ final class KeychainStore: @unchecked Sendable {
         "karmi-supabase-password",
         "karmi-supabase-access-token",
         "karmi-supabase-refresh-token",
+        "openai-api-key",
     ]
 
     private init() {
