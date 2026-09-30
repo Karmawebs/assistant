@@ -26,11 +26,9 @@ struct BotCanvasView: View {
                     engine.slotHTarget = 0
                     if engine.morph < 0.05 { engine.slotH = 0; engine.slotHVel = 0 }
                 }
-                // Integration pills have a fixed brand color → use it as bodyColor.
-                // Claude Code tasks use state-based gradient (working=blue, thinking=purple, etc.).
-                engine.bodyColor = (state.focusTask?.isIntegration == true)
-                    ? cgColorFromHex(state.focusTask!.color)
-                    : nil
+                // Karmi main avatar always keeps the black orb identity.
+                // Mini agents can still use their own integration colors.
+                engine.bodyColor = nil
                 engine.update(dt: dt)
                 engine.drawHandsBehind(context: context, size: size)
                 engine.draw(context: context, size: size)
