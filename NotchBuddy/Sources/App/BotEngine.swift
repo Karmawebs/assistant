@@ -786,8 +786,8 @@ final class BotEngine: ObservableObject {
         let W = size.width
         let H = size.height
         let R = W * 0.3
-        let rx = R * 1.14
-        let ry = R * 0.88
+        let rx = R * 1.0
+        let ry = R * 1.0
 
         let cx = W / 2 + ox * R
         // particleOverhang shifts the bot body down in canvas coords so hearts can fly into
@@ -870,8 +870,8 @@ final class BotEngine: ObservableObject {
         let R = W * 0.3
         // Only draw hands when Mochi is large enough to be meaningful (not compact/peek)
         guard R > 14 else { return }
-        let rx = R * 1.14
-        let ry = R * 0.88
+        let rx = R * 1.0
+        let ry = R * 1.0
         let cx = W / 2 + ox * R
         let cy = H / 2 + particleOverhang / 2 + oy * R + R * 0.06
 
@@ -964,8 +964,8 @@ final class BotEngine: ObservableObject {
         let W = size.width
         let H = size.height
         let R = W * 0.3
-        let rx = R * 1.14
-        let ry = R * 0.88
+        let rx = R * 1.0
+        let ry = R * 1.0
         let cx = W / 2 + ox * R
         let cy = H / 2 + particleOverhang / 2 + oy * R + R * 0.06
 
@@ -1055,45 +1055,51 @@ final class BotEngine: ObservableObject {
             // Mini bots: flat solid fill — no gradient, no reflection, no highlight
             ctx.fill(path, with: .color(Color(cgColor: bc)))
         } else {
-            // Main bot: linear gradient body
-            let c0 = cgColorToTuple(MochiConst.baseTop)
-            let c1 = cgColorToTuple(MochiConst.baseBottom)
+            // Karmi: deep black orb with a very subtle dimensional finish.
             ctx.fill(path, with: .linearGradient(
-                Gradient(colors: [colorFromTuple(c0), colorFromTuple(c1)]),
-                startPoint: CGPoint(x: rx*0.7, y: -ry*0.85),
-                endPoint: CGPoint(x: -rx*0.8, y: ry*0.9)
+                Gradient(colors: [
+                    Color(red: 0.045, green: 0.048, blue: 0.050),
+                    Color(red: 0.010, green: 0.011, blue: 0.012)
+                ]),
+                startPoint: CGPoint(x: rx * 0.45, y: -ry * 0.75),
+                endPoint: CGPoint(x: -rx * 0.55, y: ry * 0.85)
             ))
-            // State tint — fades out as morph increases (mailbox has no tint)
+
+            // Keep state feedback, but as a restrained tint so Karmi stays visually black.
             let effectiveTint = tint * (1 - morph)
             if effectiveTint > 0.01 {
                 let tc = colorFromTuple(col)
-                ctx.fill(path, with: .linearGradient(
+                ctx.fill(path, with: .radialGradient(
                     Gradient(stops: [
-                        .init(color: tc.opacity(Double(0.72 * effectiveTint)), location: 0),
-                        .init(color: tc.opacity(0), location: 1)
+                        .init(color: tc.opacity(Double(0.18 * effectiveTint)), location: 0),
+                        .init(color: tc.opacity(0), location: 0.78)
                     ]),
-                    startPoint: CGPoint(x: 0, y: ry),
-                    endPoint: CGPoint(x: 0, y: -ry)
+                    center: CGPoint(x: 0, y: ry * 0.45),
+                    startRadius: 0,
+                    endRadius: R * 1.35
                 ))
             }
-            // Shadow rim
+
+            // Soft edge depth.
             ctx.fill(path, with: .radialGradient(
                 Gradient(stops: [
-                    .init(color: .clear, location: 0),
-                    .init(color: .clear, location: 0.6),
-                    .init(color: Color.black.opacity(0.2), location: 1)
+                    .init(color: .clear, location: 0.58),
+                    .init(color: Color.black.opacity(0.38), location: 1)
                 ]),
-                center: .zero, startRadius: R*0.15, endRadius: R*1.25
+                center: .zero,
+                startRadius: R * 0.2,
+                endRadius: R * 1.3
             ))
-            // Highlight
+
+            // Tiny highlight so the orb is not completely flat.
             ctx.fill(path, with: .radialGradient(
                 Gradient(stops: [
-                    .init(color: Color.white.opacity(0.55), location: 0),
+                    .init(color: Color.white.opacity(0.10), location: 0),
                     .init(color: .clear, location: 1)
                 ]),
-                center: CGPoint(x: rx*0.34, y: -ry*0.46),
+                center: CGPoint(x: rx * 0.28, y: -ry * 0.38),
                 startRadius: 0,
-                endRadius: R*0.42
+                endRadius: R * 0.48
             ))
         }
     }
@@ -1134,7 +1140,7 @@ final class BotEngine: ObservableObject {
             let fx = lerp(max(0.18, cos(eyeYaw)), 1, morph * 0.7)
             let fy = lerp(max(0.18, cp),          1, morph * 0.7)
 
-            let eyeMult: CGFloat = isMini ? 1.9 : 1.0
+            let eyeMult: CGFloat = isMini ? 1.9 : 1.30
             let ew = R * MochiConst.eyeW * es * eyeMult
             let eh = R * MochiConst.eyeH * es * eyeMult
 
@@ -1146,7 +1152,7 @@ final class BotEngine: ObservableObject {
     }
 
     private func drawEyeShape(ctx: inout GraphicsContext, shape: EyeShape, w: CGFloat, h: CGFloat, open: CGFloat, sd: CGFloat, R: CGFloat) {
-        let ink = isMini ? Color(cgColor: MochiConst.miniInk) : Color(cgColor: MochiConst.ink)
+        let ink = isMini ? Color(cgColor: MochiConst.miniInk) : Color.white
         let now = CGFloat(CACurrentMediaTime())
 
         switch shape {
