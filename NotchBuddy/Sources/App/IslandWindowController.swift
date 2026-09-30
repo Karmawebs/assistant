@@ -14,6 +14,10 @@ final class IslandWindowController: NSWindowController {
     private var wasInIsland = false
     private var frameTimer: Timer?
     private var keyMonitor: Any?
+    private var hotkeyKeyUpMonitor: Any?
+    private var hotkeyHoldWorkItem: DispatchWorkItem?
+    private var hotkeyLongPressTriggered = false
+    private var hotkeyKeyIsDown = false
     private var viewSubscription: AnyCancellable?
 
     // Confused recovery timer (set by handleDizzy)
@@ -450,13 +454,59 @@ final class IslandWindowController: NSWindowController {
             finishDrag()
         }
 
-        // Global hotkey to show island
+        // Global Karmi shortcut.
+        // Quick ⌘K toggles Karmi. Holding ⌘K opens Prompt and starts dictation.
         NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
             Task { @MainActor in
                 guard let self, self.state.hotkeyEnabled else { return }
                 let pressed = event.modifierFlags.intersection([.command, .control, .option, .shift]).rawValue
                 guard pressed == self.state.hotkeyFlags, event.keyCode == self.state.hotkeyCode else { return }
-                if self.state.mode == .hidden || self.state.mode == .compact {
+                guard !event.isARepeat, !self.hotkeyKeyIsDown else { return }
+
+                self.hotkeyKeyIsDown = true
+                self.hotkeyLongPressTriggered = false
+                self.hotkeyHoldWorkItem?.cancel()
+
+                let hold = DispatchWorkItem { [weak self] in
+                    Task { @MainActor in
+                        guard let self, self.hotkeyKeyIsDown else { return }
+                        self.hotkeyLongPressTriggered = true
+                        self.expand(to: .prompt)
+
+                        do {
+                            if !KarmiTranscriptionService.shared.isRecording {
+                                try await KarmiTranscriptionService.shared.startRecording()
+                            }
+                        } catch {
+                            self.state.chatHistory.append(
+                                ChatMessage(role: .assistant, content: "No he podido activar el micrófono: \(error.localizedDescription)")
+                            )
+                        }
+                    }
+                }
+
+                self.hotkeyHoldWorkItem = hold
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.45, execute: hold)
+            }
+        }
+
+        hotkeyKeyUpMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyUp) { [weak self] event in
+            Task { @MainActor in
+                guard let self, self.state.hotkeyEnabled else { return }
+                guard event.keyCode == self.state.hotkeyCode, self.hotkeyKeyIsDown else { return }
+
+                self.hotkeyKeyIsDown = false
+                self.hotkeyHoldWorkItem?.cancel()
+                self.hotkeyHoldWorkItem = nil
+
+                if self.hotkeyLongPressTriggered {
+                    self.hotkeyLongPressTriggered = false
+                    return
+                }
+
+                if self.state.mode == .expanded {
+                    self.collapse()
+                } else {
                     self.expand(to: .overview)
                 }
             }
