@@ -50,6 +50,7 @@ targets:
         NSSupportsAutomaticGraphicsSwitching: YES
         NSAppleEventsUsageDescription: "Karma Assistant puede abrir herramientas y aplicaciones relacionadas con tus tareas."
         NSAccessibilityUsageDescription: "Karma Assistant puede usar el contexto de la ventana activa cuando tú lo solicites."
+        NSMicrophoneUsageDescription: "Karmi usa el micrófono únicamente cuando activas el dictado para transcribir tu voz a texto."
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.karmawebs.assistant
@@ -84,6 +85,7 @@ targets:
         NSSupportsAutomaticGraphicsSwitching: YES
         LSApplicationCategoryType: public.app-category.productivity
         ITSAppUsesNonExemptEncryption: NO
+        NSMicrophoneUsageDescription: "Karmi usa el micrófono únicamente cuando activas el dictado para transcribir tu voz a texto."
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.karmawebs.assistant.appstore
