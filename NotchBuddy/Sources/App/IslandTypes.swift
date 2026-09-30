@@ -81,7 +81,7 @@ enum AgentLayoutMode {
 enum IslandConst {
     static let notchWidth: CGFloat  = 184
     static let notchHeight: CGFloat = 32
-    static let expandedWidth: CGFloat = 360
+    static let expandedWidth: CGFloat = 640
     static let earRadius: CGFloat   = 14
     static let roundedCorner: CGFloat = 14    // hidden/peek/compact
     static let expandedCorner: CGFloat = 22
