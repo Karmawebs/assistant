@@ -208,9 +208,24 @@ final class IslandWindowController: NSWindowController {
         let pf = panel.frame
         let local = CGPoint(x: mouse.x - pf.minX, y: mouse.y - pf.minY)
 
-        // Island rect in panel coords
+        // Island rect in panel coords.
+        // When Karmi is closed/compact, keep the hover trigger intentionally small:
+        // real notch width + 20pt on each side. Once opened, the full island remains interactive.
         let islandRect = panel.currentIslandFrame(nw: notchW, nh: notchH)
-        let inIsland   = islandRect.insetBy(dx: -6, dy: -6).contains(local)
+        let hoverRect: CGRect
+        if state.mode == .expanded {
+            hoverRect = islandRect.insetBy(dx: -6, dy: -6)
+        } else {
+            let triggerW = notchW + 40
+            let triggerH = notchH + 8
+            hoverRect = CGRect(
+                x: (pf.width - triggerW) / 2,
+                y: pf.height - triggerH,
+                width: triggerW,
+                height: triggerH
+            )
+        }
+        let inIsland = hoverRect.contains(local)
 
         // Toggle click-through
         let shouldAcceptMouse = inIsland || inAttachDrag || attachDragStart != nil
