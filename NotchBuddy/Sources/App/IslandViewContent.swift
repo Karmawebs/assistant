@@ -36,61 +36,29 @@ struct OverviewView: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            // Main Karma card
+            // Minimal Karma identity
             CardBackground(wash: .soft) {
-                HStack(spacing: 14) {
-                    VStack(alignment: .leading, spacing: 5) {
-                        HStack(spacing: 6) {
-                            Circle()
-                                .fill(Color(hex: "#F5F6F8"))
-                                .frame(width: 7, height: 7)
-                            Text("Karma Assistant")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(Color(hex: "#F5F6F8"))
-                        }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Karma")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(Color(hex: "#F5F6F8"))
 
-                        Text("¿Qué necesitas?")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(Color(hex: "#F5F6F8"))
-
-                        Text("Escribe una acción rápida o consulta tus herramientas.")
-                            .font(.system(size: 11.5))
-                            .foregroundColor(Color(hex: "#8E939C"))
-                            .lineLimit(1)
-                    }
-
-                    Spacer(minLength: 8)
-
-                    PrimaryButton("Preguntar") {
-                        state.view = .prompt
-                    }
+                    Text("Assistant")
+                        .font(.system(size: 11.5))
+                        .foregroundColor(Color(hex: "#7D828B"))
                 }
                 .padding(.leading, 108)
                 .padding(.trailing, 16)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
             }
             .frame(width: 322)
 
-            // Karma ecosystem
+            // Main modules
             CardBackground(wash: nil) {
                 VStack(spacing: 6) {
-                    KarmaModuleButton(
-                        title: "APP",
-                        subtitle: "Finanzas",
-                        systemImage: "eurosign.circle.fill",
-                        state: state
-                    )
-                    KarmaModuleButton(
-                        title: "WORK",
-                        subtitle: "Proyectos",
-                        systemImage: "checkmark.circle.fill",
-                        state: state
-                    )
-                    KarmaModuleButton(
-                        title: "CARE",
-                        subtitle: "Mantenimiento",
-                        systemImage: "heart.circle.fill",
-                        state: state
-                    )
+                    KarmaModuleButton(title: "APP", systemImage: "eurosign")
+                    KarmaModuleButton(title: "WORK", systemImage: "checkmark")
+                    KarmaModuleButton(title: "CARE", systemImage: "heart.fill")
                 }
                 .padding(8)
             }
@@ -100,44 +68,36 @@ struct OverviewView: View {
 
 private struct KarmaModuleButton: View {
     let title: String
-    let subtitle: String
     let systemImage: String
-    @ObservedObject var state: AppState
     @State private var hovered = false
 
     var body: some View {
         Button {
-            state.noteMessage = "\(title) preparado para conectar en la siguiente fase."
-            state.view = .note
+            // Connection to Karma App / Work / Care will be added in the next phase.
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: systemImage)
-                    .font(.system(size: 13))
+                    .font(.system(size: 11, weight: .semibold))
                     .foregroundColor(Color(hex: "#F5F6F8"))
-                    .frame(width: 18)
+                    .frame(width: 16)
 
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(title)
-                        .font(.system(size: 10.5, weight: .bold))
-                        .foregroundColor(Color(hex: "#F5F6F8"))
-                    Text(subtitle)
-                        .font(.system(size: 9.5))
-                        .foregroundColor(Color(hex: "#7D828B"))
-                }
+                Text(title)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(Color(hex: "#F5F6F8"))
 
                 Spacer()
 
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundColor(Color(hex: "#5F646D"))
+                    .font(.system(size: 8, weight: .semibold))
+                    .foregroundColor(Color(hex: "#555A63"))
             }
             .padding(.horizontal, 10)
             .frame(height: 24)
-            .background(hovered ? Color.white.opacity(0.09) : Color(hex: "#0E0F11"))
+            .background(hovered ? Color.white.opacity(0.08) : Color(hex: "#0E0F11"))
             .clipShape(Capsule())
             .overlay(
                 Capsule()
-                    .stroke(Color.white.opacity(hovered ? 0.13 : 0.05), lineWidth: 1)
+                    .stroke(Color.white.opacity(hovered ? 0.12 : 0.04), lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
