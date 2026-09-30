@@ -214,7 +214,21 @@ final class IslandWindowController: NSWindowController {
 
         // Island rect in panel coords
         let islandRect = panel.currentIslandFrame(nw: notchW, nh: notchH)
-        let inIsland   = islandRect.insetBy(dx: -6, dy: -6).contains(local)
+        // Keep the expanded Karmi UI at its full width, but make the top hover
+        // activation target compact and centered while Karmi is not expanded.
+        let hoverRect: CGRect
+        if state.mode == .expanded {
+            hoverRect = islandRect.insetBy(dx: -6, dy: -6)
+        } else {
+            let activationWidth = min(notchW + 36, islandRect.width)
+            hoverRect = CGRect(
+                x: islandRect.midX - activationWidth / 2,
+                y: islandRect.minY - 6,
+                width: activationWidth,
+                height: islandRect.height + 12
+            )
+        }
+        let inIsland = hoverRect.contains(local)
 
         // Toggle click-through
         let shouldAcceptMouse = inIsland || inAttachDrag || attachDragStart != nil
