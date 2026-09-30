@@ -42,13 +42,19 @@ final class KarmiAIService {
             return
         }
 
-        var input = query
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        let today = formatter.string(from: Date())
+
+        var input = "Fecha local actual: \(today)\n\nUsuario: \(query)"
         if let context {
             switch context {
             case .window(let app, let title, let url):
-                input = "Contexto de ventana — App: \(app), título: \(title)\(url.map { ", URL: \($0)" } ?? "")\n\nUsuario: \(query)"
+                input = "Fecha local actual: \(today)\nContexto de ventana — App: \(app), título: \(title)\(url.map { ", URL: \($0)" } ?? "")\n\nUsuario: \(query)"
             case .file(let name, _):
-                input = "Contexto de archivo — \(name)\n\nUsuario: \(query)"
+                input = "Fecha local actual: \(today)\nContexto de archivo — \(name)\n\nUsuario: \(query)"
             }
         }
 
@@ -114,10 +120,13 @@ final class KarmiAIService {
 
     Reglas:
     - Para crear un gasto, un ingreso o una tarea, usa la herramienta correspondiente.
-    - No inventes importes, fechas, clientes, proveedores ni proyectos.
-    - Si falta un dato imprescindible, pregunta antes de ejecutar.
-    - Interpreta "hoy" con la fecha local del usuario solo cuando la app la haya incluido explícitamente en el texto.
-    - Si el usuario no menciona IVA/IRPF, usa los valores por defecto de la herramienta.
+    - No inventes importes, clientes, proveedores ni proyectos.
+    - La app siempre incluye la fecha local actual. Interpreta "hoy" usando esa fecha y normaliza fechas a YYYY-MM-DD sin preguntar.
+    - Si el usuario da una fecha en formato español como 30-09-26, 30/09/2026 o 30 de septiembre, conviértela a YYYY-MM-DD.
+    - Si no se indica ámbito contable, usa A por defecto. Solo usa B cuando el usuario lo indique explícitamente.
+    - Si no se indica prioridad de una tarea, usa Media.
+    - Si no se indica IVA/IRPF, usa los valores por defecto de la herramienta.
+    - Si falta un dato realmente imprescindible como concepto o importe, pregunta antes de ejecutar.
     - Después de ejecutar una acción, confirma brevemente qué has hecho.
     - No digas que algo se ha guardado si la herramienta devuelve error.
     """
