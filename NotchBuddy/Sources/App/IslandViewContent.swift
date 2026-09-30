@@ -33,23 +33,69 @@ struct IslandViewContent: View {
 
 struct OverviewView: View {
     @ObservedObject var state: AppState
+    @ObservedObject private var transcription = KarmiTranscriptionService.shared
+    @State private var voiceError: String = ""
 
     var body: some View {
         HStack(spacing: 10) {
-            // Minimal Karma identity
+            // Minimal Karmi identity
             CardBackground(wash: .soft) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Karma")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(Color(hex: "#F5F6F8"))
+                HStack(spacing: 10) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Karmi")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(Color(hex: "#F5F6F8"))
 
-                    Text("Assistant")
-                        .font(.system(size: 11.5))
-                        .foregroundColor(Color(hex: "#7D828B"))
+                        Text(transcription.isRecording ? "Escuchando…" : "Assistant")
+                            .font(.system(size: 11.5))
+                            .foregroundColor(transcription.isRecording ? Color(hex: "#F26F78") : Color(hex: "#7D828B"))
+                    }
+
+                    Spacer()
+
+                    Button {
+                        voiceError = ""
+                        Task {
+                            do {
+                                if transcription.isRecording {
+                                    let transcript = try await transcription.stopAndTranscribe()
+                                    state.view = .prompt
+                                    if !transcript.isEmpty {
+                                        state.chatHistory.append(ChatMessage(role: .user, content: transcript))
+                                        state.stateOverride = .thinking
+                                        await KarmiAIService.shared.chat(query: transcript, context: state.promptContext, state: state)
+                                    }
+                                } else {
+                                    try await transcription.startRecording()
+                                }
+                            } catch {
+                                voiceError = error.localizedDescription
+                            }
+                        }
+                    } label: {
+                        Image(systemName: transcription.isRecording ? "stop.fill" : "mic.fill")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(transcription.isRecording ? Color(hex: "#F26F78") : Color(hex: "#F5F6F8"))
+                            .frame(width: 30, height: 30)
+                            .background(Color.white.opacity(transcription.isRecording ? 0.12 : 0.07))
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .help(transcription.isRecording ? "Detener y enviar a Karmi" : "Hablar con Karmi")
                 }
                 .padding(.leading, 108)
-                .padding(.trailing, 16)
+                .padding(.trailing, 14)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                .overlay(alignment: .bottomLeading) {
+                    if !voiceError.isEmpty {
+                        Text(voiceError)
+                            .font(.system(size: 9.5))
+                            .foregroundColor(Color(hex: "#F48A90"))
+                            .lineLimit(1)
+                            .padding(.leading, 108)
+                            .padding(.bottom, 6)
+                    }
+                }
             }
             .frame(width: 322)
 
