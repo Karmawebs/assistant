@@ -745,7 +745,7 @@ struct PromptView: View {
                 }
 
                 HStack(spacing: 8) {
-                    TextField(state.chatHistory.isEmpty ? "Pregúntale a Karma…" : "Continuar…", text: $text)
+                    TextField(state.chatHistory.isEmpty ? "Pregúntale a Karmi…" : "Continuar…", text: $text)
                         .textFieldStyle(.plain)
                         .font(.system(size: 13))
                         .focused($focused)
@@ -781,7 +781,7 @@ struct PromptView: View {
         state.chatHistory.append(ChatMessage(role: .user, content: query))
         state.stateOverride = .thinking
         Task {
-            await ClaudeService.shared.chat(query: query, context: state.promptContext, state: state)
+            await KarmiAIService.shared.chat(query: query, context: state.promptContext, state: state)
             await MainActor.run { focused = true }
         }
     }
@@ -843,9 +843,9 @@ struct SearchingView: View {
 
     var label: String {
         switch state.promptContext {
-        case .window(_, let title, _): return "Claude is reading \(title)…"
-        case .file(let name, _): return "Claude is reading \(name)…"
-        case nil: return "Claude is searching…"
+        case .window(_, let title, _): return "Karmi está leyendo \(title)…"
+        case .file(let name, _): return "Karmi está leyendo \(name)…"
+        case nil: return "Karmi está buscando…"
         }
     }
 
