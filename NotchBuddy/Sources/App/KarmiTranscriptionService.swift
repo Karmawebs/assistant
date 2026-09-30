@@ -35,7 +35,7 @@ final class KarmiTranscriptionService: ObservableObject {
         }
 
         let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("karmi-dictation-(UUID().uuidString).m4a")
+            .appendingPathComponent("karmi-dictation-" + UUID().uuidString + ".m4a")
 
         let settings: [String: Any] = [
             AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
@@ -128,7 +128,7 @@ final class KarmiTranscriptionService: ObservableObject {
             )
         }
 
-        let boundary = "Boundary-(UUID().uuidString)"
+        let boundary = "Boundary-" + UUID().uuidString
         var body = Data()
 
         func append(_ string: String) {
@@ -137,7 +137,7 @@ final class KarmiTranscriptionService: ObservableObject {
             }
         }
 
-        append("--(boundary)\r\n")
+        append("--" + boundary + "\r\n")
         append("Content-Disposition: form-data; name=\"model\"\r\n\r\n")
         append("gpt-4o-mini-transcribe\r\n")
 
@@ -146,15 +146,15 @@ final class KarmiTranscriptionService: ObservableObject {
         append("es\r\n")
 
         append("--(boundary)\r\n")
-        append("Content-Disposition: form-data; name=\"file\"; filename=\"(filename)\"\r\n")
+        append("Content-Disposition: form-data; name=\"file\"; filename=\"" + filename + "\"\r\n")
         append("Content-Type: audio/mp4\r\n\r\n")
         body.append(audio)
-        append("\r\n--(boundary)--\r\n")
+        append("\r\n--" + boundary + "--\r\n")
 
         var request = URLRequest(url: URL(string: "https://api.openai.com/v1/audio/transcriptions")!)
         request.httpMethod = "POST"
-        request.setValue("Bearer (apiKey)", forHTTPHeaderField: "Authorization")
-        request.setValue("multipart/form-data; boundary=(boundary)", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer " + apiKey, forHTTPHeaderField: "Authorization")
+        request.setValue("multipart/form-data; boundary=" + boundary, forHTTPHeaderField: "Content-Type")
         request.httpBody = body
         request.timeoutInterval = 60
 
@@ -162,7 +162,7 @@ final class KarmiTranscriptionService: ObservableObject {
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
 
         guard (200..<300).contains(status) else {
-            let message = String(data: data, encoding: .utf8) ?? "HTTP (status)"
+            let message = String(data: data, encoding: .utf8) ?? ("HTTP " + String(status))
             throw NSError(
                 domain: "KarmiTranscription",
                 code: status,
