@@ -33,130 +33,115 @@ struct IslandViewContent: View {
 
 struct OverviewView: View {
     @ObservedObject var state: AppState
-    @State private var showingN8nDetail = false
-
-    var agent: AgentTask? { state.focusTask }
 
     var body: some View {
         HStack(spacing: 10) {
-            // Left card: title row + ticker below + ↗ button overlay
-            ZStack(alignment: .topLeading) {
-                CardBackground(wash: nil)
-
-                // Title row + ticker stacked (or integration card)
-                if let agent = agent {
-                    if agent.isIntegration {
-                        IntegrationCardView(task: agent, showingDetail: $showingN8nDetail)
-                    } else {
-                        VStack(alignment: .leading, spacing: 0) {
-                            HStack(spacing: 6) {
-                                Circle()
-                                    .fill(Color(hex: agent.color))
-                                    .frame(width: 7, height: 7)
-                                Text(agent.name)
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundColor(Color(hex: "#F5F6F8"))
-                                    .lineLimit(1)
-                                    .truncationMode(.tail)
-                                    .layoutPriority(1)
-                                Text(agent.source == .claudeCode ? "Claude Code" : "n8n")
-                                    .font(.system(size: 11))
-                                    .foregroundColor(Color(hex: "#8E939C"))
-                                    .lineLimit(1)
-                                    .truncationMode(.tail)
-                                Spacer(minLength: 2)
-                                if agent.steps.count > 1 {
-                                    Text("\(min(agent.stepIndex + 1, agent.steps.count))/\(agent.steps.count)")
-                                        .font(.system(size: 11))
-                                        .foregroundColor(Color(hex: "#6B7079"))
-                                        .fixedSize()
-                                }
-                            }
-                            .padding(.top, 6)
-                            .padding(.leading, 108)
-                            .padding(.trailing, 36)
-
-                            TickerView(task: agent)
-                                .frame(height: 44)
-                                .padding(.top, 6)
-                                .padding(.leading, 108)
-                                .padding(.trailing, 12)
+            // Main Karma card
+            CardBackground(wash: .soft) {
+                HStack(spacing: 14) {
+                    VStack(alignment: .leading, spacing: 5) {
+                        HStack(spacing: 6) {
+                            Circle()
+                                .fill(Color(hex: "#F5F6F8"))
+                                .frame(width: 7, height: 7)
+                            Text("Karma Assistant")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(Color(hex: "#F5F6F8"))
                         }
-                        .frame(maxWidth: .infinity, alignment: .topLeading)
-                        .padding(.top, 4)
-                    }
-                }
 
-                // ↗ jump button — last in ZStack so it renders on top; hidden while any detail is open
-                if !showingN8nDetail {
-                    Button(action: { openAgentTarget(agent) }) {
-                        Image(systemName: "arrow.up.right")
-                            .font(.system(size: 8, weight: .medium))
-                            .foregroundColor(Color(hex: "#5F646D"))
-                            .frame(width: 16, height: 16)
-                            .background(Color.white.opacity(0.07))
-                            .clipShape(Circle())
+                        Text("¿Qué necesitas?")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(Color(hex: "#F5F6F8"))
+
+                        Text("Escribe una acción rápida o consulta tus herramientas.")
+                            .font(.system(size: 11.5))
+                            .foregroundColor(Color(hex: "#8E939C"))
+                            .lineLimit(1)
                     }
-                    .buttonStyle(.plain)
-                    .padding(.top, 8)
-                    .padding(.trailing, 10)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
+
+                    Spacer(minLength: 8)
+
+                    PrimaryButton("Preguntar") {
+                        state.view = .prompt
+                    }
                 }
+                .padding(.leading, 108)
+                .padding(.trailing, 16)
             }
             .frame(width: 322)
 
-            // Right card: agent pills
+            // Karma ecosystem
             CardBackground(wash: nil) {
-                AgentPillsView(state: state)
+                VStack(spacing: 6) {
+                    KarmaModuleButton(
+                        title: "APP",
+                        subtitle: "Finanzas",
+                        systemImage: "eurosign.circle.fill",
+                        state: state
+                    )
+                    KarmaModuleButton(
+                        title: "WORK",
+                        subtitle: "Proyectos",
+                        systemImage: "checkmark.circle.fill",
+                        state: state
+                    )
+                    KarmaModuleButton(
+                        title: "CARE",
+                        subtitle: "Mantenimiento",
+                        systemImage: "heart.circle.fill",
+                        state: state
+                    )
+                }
+                .padding(8)
             }
         }
-        .onChange(of: state.focusId) { _, _ in showingN8nDetail = false }
     }
+}
 
-    private func openAgentTarget(_ task: AgentTask?) {
-        guard let task else { return }
-        switch task.id {
-        case "integration_claude":
-            let vscodeBundleId = "com.microsoft.VSCode"
-            if let app = NSWorkspace.shared.runningApplications.first(where: { $0.bundleIdentifier == vscodeBundleId }) {
-                app.activate(options: .activateIgnoringOtherApps)
-            } else {
-                NSWorkspace.shared.open(URL(fileURLWithPath: "/Applications/Visual Studio Code.app"))
-            }
-        case "integration_resend":
-            NSWorkspace.shared.open(URL(string: "https://resend.com/emails")!)
-        case "integration_vercel":
-            NSWorkspace.shared.open(URL(string: "https://vercel.com/dashboard")!)
-        case "integration_github":
-            NSWorkspace.shared.open(URL(string: "https://github.com")!)
-        case "integration_n8n":
-            if let urlStr = KeychainStore.shared.get("n8n-url"), let url = URL(string: urlStr) {
-                NSWorkspace.shared.open(url)
-            }
-        case "integration_stripe":
-            NSWorkspace.shared.open(URL(string: "https://dashboard.stripe.com/payments")!)
-        case "integration_notion":
-            NSWorkspace.shared.open(URL(string: "https://notion.so")!)
-        case "integration_calcom":
-            NSWorkspace.shared.open(URL(string: "https://app.cal.com/bookings")!)
-        default:
-            // Non-integration real tasks
-            if task.source == .n8n {
-                if let urlStr = KeychainStore.shared.get("n8n-url"), let url = URL(string: urlStr) {
-                    NSWorkspace.shared.open(url)
+private struct KarmaModuleButton: View {
+    let title: String
+    let subtitle: String
+    let systemImage: String
+    @ObservedObject var state: AppState
+    @State private var hovered = false
+
+    var body: some View {
+        Button {
+            state.noteMessage = "\(title) preparado para conectar en la siguiente fase."
+            state.view = .note
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 13))
+                    .foregroundColor(Color(hex: "#F5F6F8"))
+                    .frame(width: 18)
+
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(title)
+                        .font(.system(size: 10.5, weight: .bold))
+                        .foregroundColor(Color(hex: "#F5F6F8"))
+                    Text(subtitle)
+                        .font(.system(size: 9.5))
+                        .foregroundColor(Color(hex: "#7D828B"))
                 }
-            } else {
-                #if !APPSTORE
-                let terminalBundleIds = ["com.apple.Terminal", "com.googlecode.iterm2",
-                                         "net.kovidgoyal.kitty", "com.mitchellh.ghostty"]
-                if let hit = terminalBundleIds.compactMap({ id in
-                    NSWorkspace.shared.runningApplications.first { $0.bundleIdentifier == id }
-                }).first {
-                    hit.activate(options: .activateIgnoringOtherApps)
-                }
-                #endif
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundColor(Color(hex: "#5F646D"))
             }
+            .padding(.horizontal, 10)
+            .frame(height: 24)
+            .background(hovered ? Color.white.opacity(0.09) : Color(hex: "#0E0F11"))
+            .clipShape(Capsule())
+            .overlay(
+                Capsule()
+                    .stroke(Color.white.opacity(hovered ? 0.13 : 0.05), lineWidth: 1)
+            )
         }
+        .buttonStyle(.plain)
+        .onHover { hovered = $0 }
     }
 }
 
@@ -760,7 +745,7 @@ struct PromptView: View {
                 }
 
                 HStack(spacing: 8) {
-                    TextField(state.chatHistory.isEmpty ? "Ask me anything…" : "Continue…", text: $text)
+                    TextField(state.chatHistory.isEmpty ? "Pregúntale a Karma…" : "Continuar…", text: $text)
                         .textFieldStyle(.plain)
                         .font(.system(size: 13))
                         .focused($focused)
