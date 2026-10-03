@@ -375,7 +375,7 @@ struct SettingsView: View {
                 GroupBox("Active pills") {
                     VStack(alignment: .leading, spacing: 10) {
                         HStack {
-                            Text("VS Code")
+                            Text(PillCatalog.definition(for: state.mainPillId)?.name ?? "Workspace")
                                 .font(.system(size: 12, weight: .semibold))
                             Circle().fill(Color(hex: "#F5F6F8")).frame(width: 8, height: 8)
                             Spacer()
@@ -390,8 +390,10 @@ struct SettingsView: View {
                             .font(.system(size: 11))
                             .foregroundColor(state.activeIntegrations.count >= 4 ? .orange : .secondary)
 
-                        ForEach(AgentTask.toggleableIntegrationIds, id: \.self) { id in
-                            let task = AgentTask.integrationAgents.first { $0.id == id }!
+                        ForEach(PillCatalog.available.filter {
+                            $0.id != state.mainPillId && !$0.comingSoon
+                        }, id: \.id) { task in
+                            let id = task.id
                             let isOn = state.activeIntegrations.contains(id)
                             let atMax = state.activeIntegrations.count >= 4 && !isOn
                             HStack(spacing: 8) {
@@ -727,7 +729,9 @@ struct SettingsView: View {
         URLSession.shared.dataTask(with: req) { data, response, _ in
             let code = (response as? HTTPURLResponse)?.statusCode ?? 0
             guard let data, code == 200 else {
-                self.fetchN8nWorkflows(urls: urls, apiKey: apiKey, idx: idx + 1)
+                Task { @MainActor in
+                    self.fetchN8nWorkflows(urls: urls, apiKey: apiKey, idx: idx + 1)
+                }
                 return
             }
             let items: [[String: Any]]

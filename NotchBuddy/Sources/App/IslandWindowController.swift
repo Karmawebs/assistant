@@ -189,7 +189,7 @@ final class IslandWindowController: NSWindowController {
         NotificationCenter.default.addObserver(
             forName: .greetComplete, object: nil, queue: .main
         ) { [weak self] _ in
-            self?.fsm.greetComplete()
+            MainActor.assumeIsolated { self?.fsm.greetComplete() }
         }
     }
 
@@ -375,24 +375,36 @@ final class IslandWindowController: NSWindowController {
 
         // Hook server expand requests (alerts only)
         NotificationCenter.default.addObserver(forName: .hookExpand, object: nil, queue: .main) { [weak self] note in
-            guard let self, let view = note.object as? IslandView else { return }
-            self.expand(to: view)
+            guard let view = note.object as? IslandView else { return }
+            // Only the Sendable view value crosses into the main actor, not Notification.
+            MainActor.assumeIsolated {
+                self?.expand(to: view)
+            }
         }
 
         // Hook server compact reveal (non-alert work events: session start, tool use, etc.)
         NotificationCenter.default.addObserver(forName: .hookReveal, object: nil, queue: .main) { [weak self] _ in
-            guard let self else { return }
-            self.fsm.reveal()
+            // The observer is delivered synchronously on the main queue.
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                self.fsm.reveal()
+            }
         }
 
         // Collapse requests from views (OK button, etc.)
         NotificationCenter.default.addObserver(forName: .islandCollapse, object: nil, queue: .main) { [weak self] _ in
-            self?.collapse()
+            // The observer is delivered synchronously on the main queue.
+            MainActor.assumeIsolated {
+                self?.collapse()
+            }
         }
 
         // .botDizzy — posted by BotEngine.slap() on 3rd hit; show confused view + recover after 3.3s
         NotificationCenter.default.addObserver(forName: .botDizzy, object: nil, queue: .main) { [weak self] _ in
-            self?.handleDizzy()
+            // The observer is delivered synchronously on the main queue.
+            MainActor.assumeIsolated {
+                self?.handleDizzy()
+            }
         }
 
         // Window attach drag.
@@ -471,51 +483,57 @@ final class IslandWindowController: NSWindowController {
         // Native global Karmi hotkey: ⌥K.
         // Quick press toggles Karmi; holding it for 0.45s opens dictation.
         NotificationCenter.default.addObserver(forName: .karmiHotKeyPressed, object: nil, queue: .main) { [weak self] _ in
-            guard let self, self.state.hotkeyEnabled else { return }
-            guard !self.hotkeyKeyIsDown else { return }
+            // The observer is delivered synchronously on the main queue.
+            MainActor.assumeIsolated {
+                guard let self, self.state.hotkeyEnabled else { return }
+                guard !self.hotkeyKeyIsDown else { return }
 
-            self.hotkeyKeyIsDown = true
-            self.hotkeyLongPressTriggered = false
-            self.hotkeyHoldWorkItem?.cancel()
+                self.hotkeyKeyIsDown = true
+                self.hotkeyLongPressTriggered = false
+                self.hotkeyHoldWorkItem?.cancel()
 
-            let hold = DispatchWorkItem { [weak self] in
-                Task { @MainActor in
-                    guard let self, self.hotkeyKeyIsDown else { return }
-                    self.hotkeyLongPressTriggered = true
-                    self.expand(to: .prompt)
+                let hold = DispatchWorkItem { [weak self] in
+                    Task { @MainActor in
+                        guard let self, self.hotkeyKeyIsDown else { return }
+                        self.hotkeyLongPressTriggered = true
+                        self.expand(to: .prompt)
 
-                    do {
-                        if !KarmiTranscriptionService.shared.isRecording {
-                            try await KarmiTranscriptionService.shared.startRecording()
+                        do {
+                            if !KarmiTranscriptionService.shared.isRecording {
+                                try await KarmiTranscriptionService.shared.startRecording()
+                            }
+                        } catch {
+                            self.state.chatHistory.append(
+                                ChatMessage(role: .assistant, content: "No he podido activar el micrófono: \(error.localizedDescription)")
+                            )
                         }
-                    } catch {
-                        self.state.chatHistory.append(
-                            ChatMessage(role: .assistant, content: "No he podido activar el micrófono: \(error.localizedDescription)")
-                        )
                     }
                 }
-            }
 
-            self.hotkeyHoldWorkItem = hold
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45, execute: hold)
+                self.hotkeyHoldWorkItem = hold
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.45, execute: hold)
+            }
         }
 
         NotificationCenter.default.addObserver(forName: .karmiHotKeyReleased, object: nil, queue: .main) { [weak self] _ in
-            guard let self, self.state.hotkeyEnabled, self.hotkeyKeyIsDown else { return }
+            // The observer is delivered synchronously on the main queue.
+            MainActor.assumeIsolated {
+                guard let self, self.state.hotkeyEnabled, self.hotkeyKeyIsDown else { return }
 
-            self.hotkeyKeyIsDown = false
-            self.hotkeyHoldWorkItem?.cancel()
-            self.hotkeyHoldWorkItem = nil
+                self.hotkeyKeyIsDown = false
+                self.hotkeyHoldWorkItem?.cancel()
+                self.hotkeyHoldWorkItem = nil
 
-            if self.hotkeyLongPressTriggered {
-                self.hotkeyLongPressTriggered = false
-                return
-            }
+                if self.hotkeyLongPressTriggered {
+                    self.hotkeyLongPressTriggered = false
+                    return
+                }
 
-            if self.state.mode == .expanded {
-                self.collapse()
-            } else {
-                self.expand(to: .overview)
+                if self.state.mode == .expanded {
+                    self.collapse()
+                } else {
+                    self.expand(to: .overview)
+                }
             }
         }
 
@@ -525,10 +543,12 @@ final class IslandWindowController: NSWindowController {
             forName: NSWorkspace.didActivateApplicationNotification,
             object: nil, queue: .main
         ) { [weak self] note in
-            guard let self else { return }
-            if let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
-               app.bundleIdentifier != ourBundle {
-                self.state.lastExternalApp = app
+            guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else { return }
+            // NSWorkspace delivers this observer on the main queue.
+            MainActor.assumeIsolated {
+                if app.bundleIdentifier != ourBundle {
+                    self?.state.lastExternalApp = app
+                }
             }
         }
     }
@@ -609,7 +629,9 @@ final class IslandWindowController: NSWindowController {
                     ctx.duration = 0.12
                     ctx.timingFunction = CAMediaTimingFunction(name: .easeIn)
                     captured.animator().alphaValue = 0
-                }, completionHandler: { captured.close() })
+                }, completionHandler: {
+                    Task { @MainActor in captured.close() }
+                })
             }
             return
         }

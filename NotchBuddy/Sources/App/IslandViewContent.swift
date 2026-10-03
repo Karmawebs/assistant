@@ -158,10 +158,8 @@ struct ApprovalView: View {
                     PrimaryButton("Allow") {
                         HookServer.shared.sendApprovalDecision("allow")
                     }
-                    if !state.alwaysAllow {
-                        SecondaryButton("Always") {
-                            HookServer.shared.sendApprovalDecision("always")
-                        }
+                    SecondaryButton("Always") {
+                        HookServer.shared.sendApprovalDecision("always")
                     }
                 }
             }
@@ -245,7 +243,7 @@ struct FinishedView: View {
                         let terminalBundleIds = ["com.apple.Terminal", "com.googlecode.iterm2", "net.kovidgoyal.kitty", "com.mitchellh.ghostty"]
                         let activated = terminalBundleIds.compactMap { id in
                             NSWorkspace.shared.runningApplications.first { $0.bundleIdentifier == id }
-                        }.first.map { $0.activate(options: .activateIgnoringOtherApps) }
+                        }.first.map { $0.activate(options: []) }
                         if activated == nil {
                             NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/Utilities/Terminal.app"))
                         }
@@ -344,8 +342,10 @@ struct UploadView: View {
         guard animTimer == nil else { return }
         // 20 fps — smooth enough for slow dash, 3× lighter than 60fps
         animTimer = Timer.scheduledTimer(withTimeInterval: 1.0/20.0, repeats: true) { _ in
-            dashPhase  += 1.0          // 20 pt/s march
-            breathAngle += 0.9 / 20.0  // advance sin phase at 0.9 rad/s
+            Task { @MainActor in
+                dashPhase  += 1.0          // 20 pt/s march
+                breathAngle += 0.9 / 20.0  // advance sin phase at 0.9 rad/s
+            }
         }
     }
 
@@ -1219,7 +1219,7 @@ struct IntegrationCardView: View {
         if let running = ids.compactMap({ id in
             NSWorkspace.shared.runningApplications.first { $0.bundleIdentifier == id }
         }).first {
-            running.activate(options: .activateIgnoringOtherApps)
+            running.activate(options: [])
             return
         }
         if let appURL = appURL {
