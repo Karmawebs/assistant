@@ -213,14 +213,14 @@ final class AppState: ObservableObject {
         didSet { UserDefaults.standard.set(greetThresholdSeconds, forKey: "greetThreshold") }
     }
 
-    // Hotkey to show island (e.g. ⌘⇧N)
-    @Published var hotkeyEnabled: Bool = false {
+    // Karmi global shortcut: ⌥K
+    @Published var hotkeyEnabled: Bool = true {
         didSet { UserDefaults.standard.set(hotkeyEnabled, forKey: "hotkeyEnabled") }
     }
-    var hotkeyFlags: UInt = NSEvent.ModifierFlags([.command, .shift]).rawValue {
+    var hotkeyFlags: UInt = NSEvent.ModifierFlags([.option]).rawValue {
         didSet { UserDefaults.standard.set(Int(hotkeyFlags), forKey: "hotkeyFlags") }
     }
-    var hotkeyCode: UInt16 = 45 {  // 'n'
+    var hotkeyCode: UInt16 = 40 {  // 'k'
         didSet { UserDefaults.standard.set(Int(hotkeyCode), forKey: "hotkeyCode") }
     }
 
