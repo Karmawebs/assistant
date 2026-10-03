@@ -22,6 +22,24 @@ Approve permissions, watch your agents work, drop a file, chat with Claude — a
 
 ---
 
+## Karmi — versionado
+
+Este repositorio es la base de **Karmi**, el asistente nativo de Karma para macOS.
+
+### Versiones
+
+- **V2 — Karmi Assistant** 🚧 En desarrollo — ver `docs/versions/V2.md`.
+- **V1 — Karmi original** — ver `docs/versions/V1.md`.
+- El histórico funcional se mantiene en `CHANGELOG.md`.
+
+### Flujo de desarrollo
+
+La V1 queda preservada en `karma-v1`. Todo el trabajo experimental de la nueva generación se realiza en `karmi-v2`: añadimos capacidades, probamos en uso real, refinamos y solo cuando el conjunto esté validado se cerrará V2 como versión estable.
+
+> Durante esta fase la documentación de Coucou que aparece más abajo se conserva como referencia técnica del proyecto original. Se irá sustituyendo por documentación propia de Karmi conforme avance V2.
+
+
+
 ## Why
 
 Some studios showed off gorgeous notch companions… and never let anyone use them.
