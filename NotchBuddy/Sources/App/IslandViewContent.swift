@@ -37,157 +37,77 @@ struct OverviewView: View {
     @State private var voiceError: String = ""
 
     var body: some View {
-        HStack(spacing: 10) {
-            // Minimal Karmi identity
-            CardBackground(wash: .soft) {
-                HStack(spacing: 10) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Karmi")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(Color(hex: "#F5F6F8"))
+        CardBackground(wash: .soft) {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Karmi")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(Color(hex: "#F5F6F8"))
 
-                        Text(transcription.isRecording ? "Escuchando…" : "Assistant")
-                            .font(.system(size: 11.5))
-                            .foregroundColor(transcription.isRecording ? Color(hex: "#F26F78") : Color(hex: "#7D828B"))
-                    }
-
-                    Spacer()
-
-                    Button {
-                        voiceError = ""
-                        Task {
-                            do {
-                                if transcription.isRecording {
-                                    let transcript = try await transcription.stopAndTranscribe()
-                                    state.view = .prompt
-                                    if !transcript.isEmpty {
-                                        state.chatHistory.append(ChatMessage(role: .user, content: transcript))
-                                        state.stateOverride = .thinking
-                                        await KarmiAIService.shared.chat(query: transcript, context: state.promptContext, state: state)
-                                    }
-                                } else {
-                                    try await transcription.startRecording()
-                                }
-                            } catch {
-                                voiceError = error.localizedDescription
-                            }
-                        }
-                    } label: {
-                        Image(systemName: transcription.isRecording ? "stop.fill" : "mic.fill")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(transcription.isRecording ? Color(hex: "#F26F78") : Color(hex: "#F5F6F8"))
-                            .frame(width: 30, height: 30)
-                            .background(Color.white.opacity(transcription.isRecording ? 0.12 : 0.07))
-                            .clipShape(Circle())
-                    }
-                    .buttonStyle(.plain)
-                    .help(transcription.isRecording ? "Detener y enviar a Karmi" : "Hablar con Karmi")
+                    Text(transcription.isRecording ? "Escuchando…" : "Tu asistente")
+                        .font(.system(size: 11.5))
+                        .foregroundColor(transcription.isRecording ? Color(hex: "#F26F78") : Color(hex: "#7D828B"))
                 }
-                .padding(.leading, 108)
-                .padding(.trailing, 14)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-                .overlay(alignment: .bottomLeading) {
-                    if !voiceError.isEmpty {
-                        Text(voiceError)
-                            .font(.system(size: 9.5))
-                            .foregroundColor(Color(hex: "#F48A90"))
-                            .lineLimit(1)
-                            .padding(.leading, 108)
-                            .padding(.bottom, 6)
-                    }
-                }
-            }
-            .frame(width: 322)
-
-            // Main modules
-            CardBackground(wash: nil) {
-                VStack(spacing: 6) {
-                    KarmaModuleButton(
-                        title: "APP",
-                        systemImage: "eurosign",
-                        applicationNames: ["Karma App", "Karma"],
-                        fallbackURL: KarmaServiceClient.shared.appURL
-                    )
-                    KarmaModuleButton(
-                        title: "WORK",
-                        systemImage: "checkmark",
-                        applicationNames: ["Karma Work", "Work"],
-                        fallbackURL: KarmaServiceClient.shared.workURL
-                    )
-                    KarmaModuleButton(
-                        title: "CARE",
-                        systemImage: "heart.fill",
-                        applicationNames: ["Karma Care", "Care"],
-                        fallbackURL: KarmaServiceClient.shared.careURL
-                    )
-                }
-                .padding(8)
-            }
-        }
-    }
-}
-
-private struct KarmaModuleButton: View {
-    let title: String
-    let systemImage: String
-    let applicationNames: [String]
-    let fallbackURL: URL
-    @State private var hovered = false
-
-    var body: some View {
-        Button {
-            if !openInstalledApplication() {
-                NSWorkspace.shared.open(fallbackURL)
-            }
-            NotificationCenter.default.post(name: .islandCollapse, object: nil)
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: systemImage)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(Color(hex: "#F5F6F8"))
-                    .frame(width: 16)
-
-                Text(title)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(Color(hex: "#F5F6F8"))
 
                 Spacer()
 
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 8, weight: .semibold))
-                    .foregroundColor(Color(hex: "#555A63"))
+                Button {
+                    state.view = .prompt
+                } label: {
+                    Image(systemName: "text.bubble.fill")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(Color(hex: "#F5F6F8"))
+                        .frame(width: 30, height: 30)
+                        .background(Color.white.opacity(0.07))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .help("Escribir a Karmi")
+
+                Button {
+                    voiceError = ""
+                    Task {
+                        do {
+                            if transcription.isRecording {
+                                let transcript = try await transcription.stopAndTranscribe()
+                                state.view = .prompt
+                                if !transcript.isEmpty {
+                                    state.chatHistory.append(ChatMessage(role: .user, content: transcript))
+                                    state.stateOverride = .thinking
+                                    await KarmiAIService.shared.chat(query: transcript, context: state.promptContext, state: state)
+                                }
+                            } else {
+                                try await transcription.startRecording()
+                            }
+                        } catch {
+                            voiceError = error.localizedDescription
+                        }
+                    }
+                } label: {
+                    Image(systemName: transcription.isRecording ? "stop.fill" : "mic.fill")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(transcription.isRecording ? Color(hex: "#F26F78") : Color(hex: "#F5F6F8"))
+                        .frame(width: 30, height: 30)
+                        .background(Color.white.opacity(transcription.isRecording ? 0.12 : 0.07))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .help(transcription.isRecording ? "Detener y enviar a Karmi" : "Hablar con Karmi")
             }
-            .padding(.horizontal, 10)
-            .frame(height: 24)
-            .background(hovered ? Color.white.opacity(0.08) : Color(hex: "#0E0F11"))
-            .clipShape(Capsule())
-            .overlay(
-                Capsule()
-                    .stroke(Color.white.opacity(hovered ? 0.12 : 0.04), lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
-        .onHover { hovered = $0 }
-    }
-
-    private func openInstalledApplication() -> Bool {
-        let fm = FileManager.default
-        let roots = [
-            URL(fileURLWithPath: "/Applications", isDirectory: true),
-            fm.homeDirectoryForCurrentUser.appendingPathComponent("Applications", isDirectory: true),
-        ]
-
-        for name in applicationNames {
-            for root in roots {
-                let appURL = root.appendingPathComponent("\(name).app", isDirectory: true)
-                if fm.fileExists(atPath: appURL.path) {
-                    let config = NSWorkspace.OpenConfiguration()
-                    NSWorkspace.shared.openApplication(at: appURL, configuration: config)
-                    return true
+            .padding(.leading, 108)
+            .padding(.trailing, 14)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .overlay(alignment: .bottomLeading) {
+                if !voiceError.isEmpty {
+                    Text(voiceError)
+                        .font(.system(size: 9.5))
+                        .foregroundColor(Color(hex: "#F48A90"))
+                        .lineLimit(1)
+                        .padding(.leading, 108)
+                        .padding(.bottom, 6)
                 }
             }
         }
-        return false
     }
 }
 
